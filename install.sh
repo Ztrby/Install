@@ -35,6 +35,20 @@ else
 	sudo netplan apply
 fi
 
-#echo "make kubikey ssh"
-#nix-shell  -p git
-#ssh-keygen -t ed25519-sk -C "jonas.e.strom@gmail.com"
+# Do everything with nix done
+PUBKEY="$HOME/.ssh/id_ed25519_sk.pub"
+if [[ ! -f "$PUBKEY" ]]; then
+	echo "make kubikey ssh"
+	# nix-shell  -p git
+	echo "You need to have your yubikey connected"
+	ssh-keygen -t ed25519-sk -C "jonas.e.strom@gmail.com"
+fi
+echo "Trying ssh connection to github"
+echo "If your yubikey start to blink you have to touch it"
+
+if ssh -T git@github.com 2>&1 | grep -q "Hi Ztrby"; then
+	echo "You have access to private github"
+else
+	echo "You can't connact to private github, make sure this key is added to github SSH, PGP"
+	cat $HOME/.ssh/id_ed25519_sk.pub
+fi
