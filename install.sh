@@ -35,20 +35,34 @@ else
 	sudo netplan apply
 fi
 
-# Do everything with nix done
-PUBKEY="$HOME/.ssh/id_ed25519_sk.pub"
+# Install ssh keys to github, config fil
+PUBKEY="$HOME/.ssh/id_ed25519_sk_rk.pub"
 if [[ ! -f "$PUBKEY" ]]; then
+	cp config "$HOME/.ssh/"
 	echo "make kubikey ssh"
-	# nix-shell  -p git
 	echo "You need to have your yubikey connected"
-	ssh-keygen -t ed25519-sk -C "jonas.e.strom@gmail.com"
+	cd "$HOME/.ssh/"
+	ssh-keygen -K
 fi
 echo "Trying ssh connection to github"
 echo "If your yubikey start to blink you have to touch it"
 
 if ssh -T git@github.com 2>&1 | grep -q "Hi Ztrby"; then
 	echo "You have access to private github"
+	mkdir "$HOME/.dotfiles"
+	cd "$HOME/.dotfiles"
+	nix run nixpkgs#git -- clone git@github.com:Ztrby/dotfiles.git .
+	
 else
 	echo "You can't connact to private github, make sure this key is added to github SSH, PGP"
-	cat $HOME/.ssh/id_ed25519_sk.pub
+	cat $HOME/.ssh/id_ed25519_sk_rk.pub
 fi
+
+# IF the cloning of the repository was done, run home-manager
+FLAKEFILE="$HOME/.dotfiles/flake.nix"
+if [[ -f "$FLAKEFILE" ]]; then
+	echo "Run home-manager"
+	nix run nixpkgs#home-manager -- switch --flake "$HOME/.dotfiles" -b backup
+	else
+	echo "Cloning of dotfiles was not done"
+	fi
